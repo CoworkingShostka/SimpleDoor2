@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10" xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest" xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" IgnorableNamespaces="uap mp">
-  <Identity Name="afc0aeea-54c9-4b87-8656-a01a22ed7b58" Publisher="CN=Mozok" Version="1.0.3.0" />
+  <Identity Name="afc0aeea-54c9-4b87-8656-a01a22ed7b58" Publisher="CN=Mozok" Version="1.0.4.0" />
   <mp:PhoneIdentity PhoneProductId="afc0aeea-54c9-4b87-8656-a01a22ed7b58" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
   <Properties>
     <DisplayName>SimpleDoor2</DisplayName>
