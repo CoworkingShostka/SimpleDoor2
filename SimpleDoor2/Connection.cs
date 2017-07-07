@@ -29,7 +29,7 @@ namespace SimpleDoor2
         public Connection()
         {
             MqttConnect();
-            SerialConnection();
+            //SerialConnection();
         }
 
         static private string _mqttStatus = "Not Connected";
@@ -91,12 +91,16 @@ namespace SimpleDoor2
         //string serverAddr = "test.mosquitto.org";
         string serverAddr = "192.168.1.2";
         const string topic1 = "AS/DoorCoworkingOut/server_response"; //"AS/DoorCoworkingOut/server_response"  "TestOut/server_response"
-        const string topic2 = "AS/F";   //"AS/DoorCoworkingOut/F"
-        const string topic3 = "AS/I";   //"AS/DoorCoworkingOut/I"
-        const string topic4 = "AS/rez"; //"AS/DoorCoworkingOut/rez"
-        const string topic5 = "AS/ind";   //"AS/DoorCoworkingOut/ind"
+        const string topic2 = "AS/UserData";
+
+        //const string topic2 = "AS/F";   //"AS/DoorCoworkingOut/F"
+        //const string topic3 = "AS/I";   //"AS/DoorCoworkingOut/I"
+        //const string topic4 = "AS/rez"; //"AS/DoorCoworkingOut/rez"
+        //const string topic5 = "AS/ind";   //"AS/DoorCoworkingOut/ind"
 
         const string topic6 = "AS/DoorCoworkingIn/server_response";    //"AS/DoorCoworkingIn/ind"  "TestIn/server_response"
+
+        const string topic7 = "AS/DoorCoworkingOut/test";
 
         public void MqttConnect()
         {
@@ -104,11 +108,7 @@ namespace SimpleDoor2
             client = new MqttClient(serverAddr);
             client.Connect(Guid.NewGuid().ToString());
 
-            if (client.IsConnected)
-            {
-                mqttStatus = "I`m Connected to " + serverAddr;
 
-            }
 
             client.MqttMsgPublishReceived += client_MqttMsgPublishReceived;
 
@@ -117,11 +117,24 @@ namespace SimpleDoor2
 
             client.Subscribe(new string[] { topic1 }, new byte[] { MqttMsgBase.QOS_LEVEL_AT_MOST_ONCE });
             client.Subscribe(new string[] { topic2 }, new byte[] { MqttMsgBase.QOS_LEVEL_AT_MOST_ONCE });
-            client.Subscribe(new string[] { topic3 }, new byte[] { MqttMsgBase.QOS_LEVEL_AT_MOST_ONCE });
-            client.Subscribe(new string[] { topic4 }, new byte[] { MqttMsgBase.QOS_LEVEL_AT_MOST_ONCE });
-            client.Subscribe(new string[] { topic5 }, new byte[] { MqttMsgBase.QOS_LEVEL_AT_MOST_ONCE });
+            //client.Subscribe(new string[] { topic3 }, new byte[] { MqttMsgBase.QOS_LEVEL_AT_MOST_ONCE });
+            //client.Subscribe(new string[] { topic4 }, new byte[] { MqttMsgBase.QOS_LEVEL_AT_MOST_ONCE });
+            //client.Subscribe(new string[] { topic5 }, new byte[] { MqttMsgBase.QOS_LEVEL_AT_MOST_ONCE });
             client.Subscribe(new string[] { topic6 }, new byte[] { MqttMsgBase.QOS_LEVEL_AT_MOST_ONCE });
 
+            client.Subscribe(new string[] { topic7 }, new byte[] { MqttMsgBase.QOS_LEVEL_AT_MOST_ONCE });
+
+            //if (client.IsConnected)
+            //{
+            //    mqttStatus = "I`m Connected to " + serverAddr;
+
+            //}
+
+        }
+
+        public void MqttInit()
+        {
+            this.client.Publish(topic7, Encoding.UTF8.GetBytes("Connected to" + serverAddr));
         }
 
         byte[] mqttMessage;
@@ -135,66 +148,115 @@ namespace SimpleDoor2
         {
             mqttMessage = e.Message;
             mqttTopic = e.Topic;
+            //tempTopic = mqttTopic.Split(new char[] { '/' });
             switch (mqttTopic)
             {
+                case topic7:
+                    {
+                        await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+                        {
+                            var data = Encoding.UTF8.GetString(mqttMessage);
+                            if (data == "Connected to" + serverAddr)
+                            {
+                                mqttStatus = data;
+                            }
+                            else this.client.Publish(topic7, Encoding.UTF8.GetBytes("Connected to" + serverAddr));
+                        });
+
+
+                        break;
+                    }
                 case topic1:
-                    await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
                     {
-                        //Do some UI-code that must be run on the UI thread.
-                        mqttData = Encoding.UTF8.GetString(mqttMessage);
-                        if (mqttData == "yes")
-                            Add();
-                    });
+                        await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+                        {
+                            //Do some UI-code that must be run on the UI thread.
+                            mqttData = Encoding.UTF8.GetString(mqttMessage);
+                            if (mqttData == "yes")
+                                Add();
+                        });
 
-                    break;
+                        break;
+                    }
+
                 case topic2:
-                    await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
                     {
-                        //Do some UI-code that must be run on the UI thread.
-                        _secondName = Encoding.UTF8.GetString(mqttMessage);
-                    });
-                    break;
-
-                case topic3:
-                    await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-                    {
-                        //Do some UI-code that must be run on the UI thread.
-                        _FirstName = Encoding.UTF8.GetString(mqttMessage);
-                    });
-                    break;
-                case topic4:
-                    await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-                    {
-                        //Do some UI-code that must be run on the UI thread.
-                        switch (Encoding.UTF8.GetString(mqttMessage))
+                        string[] data;
+                        await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
                         {
-                            case "rez":
-                                _rez = "Резидент";
-                                break;
-                            case "staj":
-                                _rez = "Стажер";
-                                break;
-                        }
-                    });
-                    break;
-                case topic5:
-                    await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-                    {
-                        //Do some UI-code that must be run on the UI thread.
-                        int.TryParse(Encoding.UTF8.GetString(mqttMessage), out _ind);
-                    });
-                    break;
+                            //Do some UI-code that must be run on the UI thread.
+                            data = Encoding.UTF8.GetString(mqttMessage).Split(new char[] { '/' });
+
+                            int.TryParse(data[0], out _ind);
+                            _secondName = data[1];
+                            _FirstName = data[2];
+                            switch (data[3])
+                            {
+                                case "rez":
+                                    _rez = "Резидент";
+                                    break;
+                                case "staj":
+                                    _rez = "Стажер";
+                                    break;
+                            }
+                        });
+
+
+                        break;
+                    }
+
+                //case topic3:
+                //    {
+                //        await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+                //        {
+                //            //Do some UI-code that must be run on the UI thread.
+                //            _FirstName = Encoding.UTF8.GetString(mqttMessage);
+                //        });
+                //        break;
+                //    }
+
+                //case topic4:
+                //    {
+                //        await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+                //        {
+                //            //Do some UI-code that must be run on the UI thread.
+                //            switch (Encoding.UTF8.GetString(mqttMessage))
+                //            {
+                //                case "rez":
+                //                    _rez = "Резидент";
+                //                    break;
+                //                case "staj":
+                //                    _rez = "Стажер";
+                //                    break;
+                //            }
+                //        });
+                //        break;
+                //    }
+
+                //case topic5:
+                //    {
+                //        await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+                //        {
+                //            //Do some UI-code that must be run on the UI thread.
+                //            int.TryParse(Encoding.UTF8.GetString(mqttMessage), out _ind);
+                //        });
+                //        break;
+                //    }
+
                 case topic6:
-                    await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
                     {
-                        //Do some UI-code that must be run on the UI thread.
-                        if (Encoding.UTF8.GetString(mqttMessage) == "yes")
+                        await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
                         {
-                            Delete();
-                        }
+                            //Do some UI-code that must be run on the UI thread.
+                            if (Encoding.UTF8.GetString(mqttMessage) == "yes")
+                            {
+                                Delete();
+                            }
 
-                    });
-                    break;
+                        });
+                        break;
+                    }
+
             }
 
         }
@@ -301,9 +363,9 @@ namespace SimpleDoor2
                 if ((fstLetter >= 0) && (lstLetter > 0)) strFromPort = strFromPort.Substring(fstLetter, lstLetter - fstLetter);
 
                 this.client.Publish("AS/DoorCoworkingOut/cardID", Encoding.UTF8.GetBytes(strFromPort));
-                
+
                 serialData = Regex.Replace(strFromPort, @"\t|\n|\r", "");
-                
+
             }
         }
 

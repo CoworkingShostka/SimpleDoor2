@@ -30,6 +30,7 @@ namespace SimpleDoor2
             this.InitializeComponent();
 
             this.connect = new Connection();
+
         }
 
         public Connection connect { get; set; }
@@ -117,6 +118,8 @@ namespace SimpleDoor2
 
         private void Page_Loaded(object sender, RoutedEventArgs e)
         {
+            connect.MqttInit();
+
             ClearExtendedExecution();
             BeginExtendedExecution();
         }
