@@ -1,7 +1,9 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -11,6 +13,7 @@ using uPLibrary.Networking.M2Mqtt;
 using uPLibrary.Networking.M2Mqtt.Messages;
 using Windows.Devices.Enumeration;
 using Windows.Devices.SerialCommunication;
+using Windows.Storage;
 using Windows.Storage.Streams;
 
 namespace SimpleDoor2
@@ -30,6 +33,7 @@ namespace SimpleDoor2
         {
             MqttConnect();
             //SerialConnection();
+            //loadUserList();
         }
 
         static private string _mqttStatus = "Not Connected";
@@ -143,6 +147,7 @@ namespace SimpleDoor2
         string _secondName;
         string _rez;
         int _ind;
+        bool start = false;
 
         async void client_MqttMsgPublishReceived(object sender, MqttMsgPublishEventArgs e)
         {
@@ -159,22 +164,12 @@ namespace SimpleDoor2
                             if (data == "Connected to" + serverAddr)
                             {
                                 mqttStatus = data;
+                                this.client.Publish("AS/DoorCoworkingIn/userList", Encoding.UTF8.GetBytes("start"));
+                                start = true;
                             }
                             else this.client.Publish(topic7, Encoding.UTF8.GetBytes("Connected to" + serverAddr));
                         });
 
-
-                        break;
-                    }
-                case topic1:
-                    {
-                        await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-                        {
-                            //Do some UI-code that must be run on the UI thread.
-                            mqttData = Encoding.UTF8.GetString(mqttMessage);
-                            if (mqttData == "yes")
-                                Add();
-                        });
 
                         break;
                     }
@@ -186,6 +181,11 @@ namespace SimpleDoor2
                         {
                             //Do some UI-code that must be run on the UI thread.
                             data = Encoding.UTF8.GetString(mqttMessage).Split(new char[] { '/' });
+                            if (data[0] == "stop")
+                            {
+                                start = false;
+                                return;
+                            }
 
                             int.TryParse(data[0], out _ind);
                             _secondName = data[1];
@@ -199,8 +199,13 @@ namespace SimpleDoor2
                                     _rez = "Стажер";
                                     break;
                             }
-                        });
 
+                            if (start == true)
+                            {
+                                Add();
+                                this.client.Publish("AS/DoorCoworkingIn/userList", Encoding.UTF8.GetBytes("next"));
+                            }
+                        });
 
                         break;
                     }
@@ -257,6 +262,18 @@ namespace SimpleDoor2
                         break;
                     }
 
+                case topic1:
+                    {
+                        await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+                        {
+                            //Do some UI-code that must be run on the UI thread.
+                            mqttData = Encoding.UTF8.GetString(mqttMessage);
+                            if (mqttData == "yes")
+                                Add();
+                        });
+
+                        break;
+                    }
             }
 
         }
@@ -319,6 +336,8 @@ namespace SimpleDoor2
             }
         }
 
+
+
         private async Task Listen()
         {
             try
@@ -332,6 +351,8 @@ namespace SimpleDoor2
             catch (Exception ex)
             {
                 //txtStatus.Text = ex.Message;
+                var dialog = new Windows.UI.Popups.MessageDialog("Oops! Something went wrong: " + ex.Message);
+                await dialog.ShowAsync();
             }
             finally
             {
@@ -342,6 +363,7 @@ namespace SimpleDoor2
                 }
             }
         }
+
 
         private async Task ReadAsync(CancellationToken cancellationToken)
         {
@@ -403,6 +425,8 @@ namespace SimpleDoor2
             }
             catch (Exception ex)
             {
+                var dialog = new Windows.UI.Popups.MessageDialog("Oops! Something went wrong: " + ex.Message);
+                await dialog.ShowAsync();
                 // txtStatus.Text = ex.Message;
             }
             finally
@@ -444,5 +468,40 @@ namespace SimpleDoor2
         {
             People.Remove(People.SingleOrDefault(i => i.ind == _ind));
         }
+
+        /// <summary>
+        /// Save and load user list in JSON
+        /// </summary>
+        //public async Task saveUserList()
+        //{
+        //    StorageFolder folder = ApplicationData.Current.LocalFolder; //ApplicationData.Current.RoamingFolder;
+        //    var file = await folder.CreateFileAsync("collection.json", CreationCollisionOption.ReplaceExisting);
+        //    using (var stream = await file.OpenStreamForWriteAsync())
+        //    using (var writer = new StreamWriter(stream, Encoding.UTF8))
+        //    {
+        //        string json = JsonConvert.SerializeObject(People);
+        //        await writer.WriteAsync(json);
+        //    }
+        //}
+
+        //public async Task loadUserList()
+        //{
+        //    StorageFolder folder = ApplicationData.Current.LocalFolder;
+        //    if (!File.Exists(folder + @"\collection.json"))
+        //    {
+        //        await folder.CreateFileAsync("collection.json", CreationCollisionOption.ReplaceExisting);
+        //    }
+        //    else
+        //    {
+        //        var file = await folder.GetFileAsync("collection.json");
+        //        using (var stream = await file.OpenStreamForReadAsync())
+        //        using (var reader = new StreamReader(stream, Encoding.UTF8))
+        //        {
+        //            string json = await reader.ReadToEndAsync();
+        //            People = JsonConvert.DeserializeObject<ObservableCollection<Person>>(json);
+        //        }
+        //    }
+        //}
+
     }
 }

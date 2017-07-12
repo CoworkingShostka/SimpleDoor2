@@ -120,12 +120,14 @@ namespace SimpleDoor2
         {
             connect.MqttInit();
 
+            //await connect.loadUserList();
             ClearExtendedExecution();
             BeginExtendedExecution();
         }
 
         private void Page_Unloaded(object sender, RoutedEventArgs e)
         {
+            //await connect.saveUserList();
             connect.CancelReadTask();
             EndExtendedExecution();
         }
